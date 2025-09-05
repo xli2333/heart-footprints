@@ -185,11 +185,25 @@ export default function LetterBox() {
   // 获取完整对话线程
   const fetchConversationThread = async (letter: Letter) => {
     try {
+      console.log('获取信件对话线程:', letter.id)
       const response = await fetch(`${getApiPath('/letters')}/${letter.id}/thread`)
       const result = await response.json()
       
-      if (result.success) {
+      console.log('API 响应:', result)
+      
+      if (result.success && result.data.thread) {
+        console.log('设置对话线程:', result.data.thread)
         setConversationThread(result.data.thread)
+      } else {
+        console.log('API 返回失败或无数据，使用当前信件')
+        // 如果获取失败，至少显示当前信件
+        setConversationThread([{
+          ...letter,
+          sender_name: letter.is_sent_by_user ? '我' : '对方',
+          is_sent_by_current_user: letter.is_sent_by_user,
+          is_read: letter.is_read,
+          thread_level: 0
+        }])
       }
     } catch (error) {
       console.error('获取对话线程失败:', error)
