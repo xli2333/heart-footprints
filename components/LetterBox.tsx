@@ -34,6 +34,7 @@ export default function LetterBox() {
   const [showReader, setShowReader] = useState(false)
   const [selectedLetter, setSelectedLetter] = useState<Letter | null>(null)
   const [replyToLetter, setReplyToLetter] = useState<Letter | null>(null)
+  const [conversationThread, setConversationThread] = useState<any[]>([])
 
   // Writer 相关状态
   const [title, setTitle] = useState('')
@@ -175,6 +176,31 @@ export default function LetterBox() {
     // 如果是未读信件，标记为已读
     if (!letter.is_read && !letter.is_sent_by_user) {
       await markAsRead(letter)
+    }
+    
+    // 获取完整对话线程
+    await fetchConversationThread(letter)
+  }
+  
+  // 获取完整对话线程
+  const fetchConversationThread = async (letter: Letter) => {
+    try {
+      const response = await fetch(`${getApiPath('/letters')}/${letter.id}/thread`)
+      const result = await response.json()
+      
+      if (result.success) {
+        setConversationThread(result.data.thread)
+      }
+    } catch (error) {
+      console.error('获取对话线程失败:', error)
+      // 如果获取失败，至少显示当前信件
+      setConversationThread([{
+        ...letter,
+        sender_name: letter.is_sent_by_user ? '我' : '对方',
+        is_sent_by_current_user: letter.is_sent_by_user,
+        is_read: letter.is_read,
+        thread_level: 0
+      }])
     }
   }
 
@@ -496,7 +522,7 @@ export default function LetterBox() {
           )}
         </AnimatePresence>
 
-        {/* 阅读面板 */}
+        {/* 流式对话阅读面板 */}
         <AnimatePresence>
           {showReader && selectedLetter && (
             <motion.div
@@ -506,71 +532,139 @@ export default function LetterBox() {
               exit={{ opacity: 0 }}
             >
               <motion.div
-                className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto"
+                className="bg-gradient-to-b from-amber-50 to-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col"
                 initial={{ scale: 0.9, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
                 exit={{ scale: 0.9, opacity: 0 }}
               >
-                <div className="p-6">
-                  <div className="flex items-center justify-between mb-6">
-                    <div className="flex items-center gap-2">
-                      <Mail className="w-6 h-6 text-amber-500" />
-                      <span className="text-sm text-amber-600">
-                        {formatRelativeTime(selectedLetter.created_at)}
-                      </span>
-                      {selectedLetter.scheduled_delivery_at && (
-                        <span className="bg-blue-500 text-white text-xs px-2 py-1 rounded-full flex items-center gap-1">
-                          <Clock className="w-3 h-3" />
-                          定时发送
-                        </span>
-                      )}
+                {/* 聊天样式头部 */}
+                <div className="bg-gradient-to-r from-amber-500 to-amber-600 text-white p-4 flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center">
+                      <Mail className="w-5 h-5" />
                     </div>
-                    <div className="flex items-center gap-2">
-                      {!selectedLetter.is_sent_by_user && (
-                        <>
-                          <button
-                            onClick={() => startReply(selectedLetter)}
-                            className="flex items-center gap-1 px-3 py-1 text-sm bg-amber-100 text-amber-700 rounded-full hover:bg-amber-200 transition-colors"
-                            title="回信"
-                          >
-                            <Reply className="w-4 h-4" />
-                            回信
-                          </button>
-                        </>
-                      )}
-                      {selectedLetter.is_sent_by_user && (
-                        <button
-                          onClick={() => deleteLetter(selectedLetter)}
-                          className="text-red-500 hover:text-red-700 transition-colors"
-                          title="删除信件"
-                        >
-                          <Trash2 className="w-5 h-5" />
-                        </button>
-                      )}
-                      <button
-                        onClick={() => {
-                          setShowReader(false)
-                          setSelectedLetter(null)
-                        }}
-                        className="text-amber-600 hover:text-amber-800 transition-colors"
-                      >
-                        <X className="w-6 h-6" />
-                      </button>
+                    <div>
+                      <h2 className="font-semibold text-lg">信件对话</h2>
+                      <p className="text-xs text-white/80">
+                        {conversationThread.length} 条消息
+                      </p>
                     </div>
                   </div>
-
-                  {selectedLetter.title && (
-                    <h2 className="text-2xl font-bold text-amber-800 mb-4">
-                      {selectedLetter.title}
-                    </h2>
-                  )}
-
-                  <div className="prose prose-amber max-w-none">
-                    <p className="text-amber-700 leading-relaxed whitespace-pre-wrap">
-                      {selectedLetter.content}
-                    </p>
+                  <div className="flex items-center gap-2">
+                    {!selectedLetter.is_sent_by_user && (
+                      <button
+                        onClick={() => startReply(selectedLetter)}
+                        className="flex items-center gap-1 px-3 py-2 bg-white/20 hover:bg-white/30 rounded-full transition-colors text-sm"
+                      >
+                        <Reply className="w-4 h-4" />
+                        回信
+                      </button>
+                    )}
+                    {selectedLetter.is_sent_by_user && (
+                      <button
+                        onClick={() => deleteLetter(selectedLetter)}
+                        className="p-2 bg-white/20 hover:bg-white/30 rounded-full transition-colors"
+                        title="删除信件"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    )}
+                    <button
+                      onClick={() => {
+                        setShowReader(false)
+                        setSelectedLetter(null)
+                        setConversationThread([])
+                      }}
+                      className="text-white/80 hover:text-white transition-colors p-1"
+                    >
+                      <X className="w-6 h-6" />
+                    </button>
                   </div>
                 </div>
+
+                {/* 显示第一封信的主题 */}
+                {conversationThread.length > 0 && conversationThread[0].title && (
+                  <div className="bg-amber-50 border-b border-amber-100 p-4 text-center">
+                    <span className="bg-amber-200 text-amber-800 px-3 py-1 rounded-full text-sm font-medium">
+                      主题：{conversationThread[0].title}
+                    </span>
+                  </div>
+                )}
+
+                {/* 流式对话内容 */}
+                <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                  {conversationThread.map((message, index) => (
+                    <motion.div
+                      key={message.id}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: index * 0.1 }}
+                      className={`flex items-start gap-3 ${
+                        message.is_sent_by_current_user ? 'justify-end' : 'justify-start'
+                      }`}
+                    >
+                      {/* 左侧头像 */}
+                      {!message.is_sent_by_current_user && (
+                        <div className="w-8 h-8 bg-amber-200 rounded-full flex items-center justify-center flex-shrink-0">
+                          <span className="text-sm font-medium text-amber-700">
+                            {message.sender_name?.charAt(0) || 'T'}
+                          </span>
+                        </div>
+                      )}
+
+                      {/* 消息气泡 */}
+                      <div className={`max-w-[70%] ${
+                        message.is_sent_by_current_user ? 'flex flex-col items-end' : 'flex flex-col items-start'
+                      }`}>
+                        <div className={`rounded-2xl px-4 py-3 ${
+                          message.is_sent_by_current_user
+                            ? 'bg-amber-500 text-white'
+                            : 'bg-white border border-gray-200 text-gray-800'
+                        }`}>
+                          <p className="text-sm leading-relaxed whitespace-pre-wrap">
+                            {message.content}
+                          </p>
+                        </div>
+                        
+                        {/* 消息元信息 */}
+                        <div className="flex items-center gap-2 mt-1 px-2 text-xs text-gray-500">
+                          <span>{formatRelativeTime(message.created_at)}</span>
+                          {message.scheduled_delivery_at && (
+                            <span className="flex items-center gap-1 text-blue-500">
+                              <Clock className="w-3 h-3" />
+                              定时
+                            </span>
+                          )}
+                          {message.is_sent_by_current_user && (
+                            <span className={message.is_read ? 'text-green-500' : 'text-gray-400'}>
+                              {message.is_read ? '✓✓' : '✓'}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* 右侧头像 */}
+                      {message.is_sent_by_current_user && (
+                        <div className="w-8 h-8 bg-primary-200 rounded-full flex items-center justify-center flex-shrink-0">
+                          <span className="text-sm font-medium text-primary-700">我</span>
+                        </div>
+                      )}
+                    </motion.div>
+                  ))}
+                </div>
+
+                {/* 快速回复区域 */}
+                {!selectedLetter.is_sent_by_user && (
+                  <div className="bg-white border-t border-gray-100 p-4">
+                    <button
+                      onClick={() => startReply(selectedLetter)}
+                      className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-amber-500 hover:bg-amber-600 text-white rounded-full transition-colors"
+                    >
+                      <Reply className="w-4 h-4" />
+                      快速回复
+                    </button>
+                  </div>
+                )}
               </motion.div>
             </motion.div>
           )}
