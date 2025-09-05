@@ -2,6 +2,65 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getUserFromRequest } from '@/lib/auth'
 import { supabase } from '@/lib/supabase'
 
+// 获取单个倒数日事件
+export async function GET(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  try {
+    // 验证用户身份
+    const user = getUserFromRequest(request)
+    if (!user) {
+      return NextResponse.json(
+        { success: false, error: '请先登录' },
+        { status: 401 }
+      )
+    }
+
+    const eventId = params.id
+
+    if (!eventId) {
+      return NextResponse.json(
+        { success: false, error: '事件ID不能为空' },
+        { status: 400 }
+      )
+    }
+
+    const { data: event, error } = await supabase
+      .from('countdown_events')
+      .select('*')
+      .eq('id', eventId)
+      .single()
+
+    if (error) {
+      console.error('Database error:', error)
+      return NextResponse.json(
+        { success: false, error: '获取倒数日事件失败' },
+        { status: 500 }
+      )
+    }
+
+    if (!event) {
+      return NextResponse.json(
+        { success: false, error: '倒数日事件不存在' },
+        { status: 404 }
+      )
+    }
+
+    return NextResponse.json({
+      success: true,
+      data: { event }
+    })
+
+  } catch (error) {
+    console.error('Get countdown event error:', error)
+    return NextResponse.json(
+      { success: false, error: '获取倒数日事件时出现问题' },
+      { status: 500 }
+    )
+  }
+}
+
 // 删除特定的倒数日事件
 export async function DELETE(
   request: NextRequest,
