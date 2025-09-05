@@ -1,0 +1,19 @@
+╭───────────────────────────────────────────────────╮
+│ ✻ Welcome to Claude Code!                         │
+│                                                   │
+│   /help for help, /status for your current setup  │
+│                                                   │
+│   cwd: C:\Users\LXG\Classified                    │
+╰───────────────────────────────────────────────────╯
+  ⎿  Read components\MemoryGallery.tsx (394 lines)
+  ⎿  Read components\CountdownTimer.tsx (386 lines)
+  ⎿  Read LOCAL-TEST-GUIDE.md (230 lines)
+  ⎿  Read update-components.js (79 lines)
+  ⎿  Todo list read (3 items)
+
+> /compact 
+  ⎿  Compacted (ctrl+r to see full summary)
+
+> /cost 
+  ⎿  With your Claude Pro subscription, no need to monitor cost — your subscription includes Claude Code usage
+
