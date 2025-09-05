@@ -114,7 +114,8 @@
       "Read(/C:\\Users\\59321\\Classified\\app\\api\\memories/**)",
       "Read(/C:\\Users\\59321\\Classified\\components/**)",
       "Read(/C:\\Users\\59321\\Classified\\supabase\\migrations/**)",
-      "Read(/C:\\Users\\59321\\Classified\\components/**)"
+      "Read(/C:\\Users\\59321\\Classified\\components/**)",
+      "Bash(git branch:*)"
     ],
     "deny": [],
     "ask": []
