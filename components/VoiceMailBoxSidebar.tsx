@@ -42,7 +42,7 @@ export default function VoiceMailBoxSidebar({ user }: VoiceMailBoxSidebarProps) 
           setMessages(data.data || [])
           // 计算新消息数量
           const newCount = data.data?.filter((msg: VoiceMessage) => 
-            msg.recipient === user.role && msg.isNew
+            msg.recipient === user.id && msg.isNew
           ).length || 0
           setNewMessagesCount(newCount)
         }
@@ -54,7 +54,7 @@ export default function VoiceMailBoxSidebar({ user }: VoiceMailBoxSidebarProps) 
     }
 
     fetchVoiceMessages()
-  }, [user.role])
+  }, [user.id])
 
   // 发送语音消息
   const handleSendVoice = async (audioBlob: Blob, duration: number) => {
@@ -62,8 +62,8 @@ export default function VoiceMailBoxSidebar({ user }: VoiceMailBoxSidebarProps) 
       const formData = new FormData()
       formData.append('audio', audioBlob, `voice-${Date.now()}.webm`)
       formData.append('duration', duration.toString())
-      formData.append('sender', user.role)
-      formData.append('recipient', user.role === 'him' ? 'her' : 'him')
+      formData.append('sender', user.id)
+      formData.append('recipient', user.id === 'him' ? 'her' : 'him')
 
       const response = await fetch('/api/voice-messages', {
         method: 'POST',

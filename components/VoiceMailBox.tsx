@@ -59,7 +59,7 @@ export default function VoiceMailBox({ user }: VoiceMailBoxProps) {
           setMessages(data.data || [])
           // 计算新消息数量
           const newCount = data.data?.filter((msg: VoiceMessage) => 
-            msg.recipient === user.role && msg.isNew
+            msg.recipient === user.id && msg.isNew
           ).length || 0
           setNewMessagesCount(newCount)
         }
@@ -71,7 +71,7 @@ export default function VoiceMailBox({ user }: VoiceMailBoxProps) {
     }
 
     fetchVoiceMessages()
-  }, [user.role])
+  }, [user.id])
 
   // 发送语音消息
   const handleSendVoice = async (audioBlob: Blob, duration: number) => {
@@ -79,8 +79,8 @@ export default function VoiceMailBox({ user }: VoiceMailBoxProps) {
       const formData = new FormData()
       formData.append('audio', audioBlob, `voice-${Date.now()}.webm`)
       formData.append('duration', duration.toString())
-      formData.append('sender', user.role)
-      formData.append('recipient', user.role === 'him' ? 'her' : 'him')
+      formData.append('sender', user.id)
+      formData.append('recipient', user.id === 'him' ? 'her' : 'him')
 
       const response = await fetch('/api/voice-messages', {
         method: 'POST',
@@ -151,8 +151,8 @@ export default function VoiceMailBox({ user }: VoiceMailBoxProps) {
   const filteredMessages = messages.filter(message => {
     const matchesFilter = 
       filterBy === 'all' || 
-      (filterBy === 'sent' && message.sender === user.role) ||
-      (filterBy === 'received' && message.recipient === user.role)
+      (filterBy === 'sent' && message.sender === user.id) ||
+      (filterBy === 'received' && message.recipient === user.id)
     
     const matchesSearch = 
       searchTerm === '' ||
@@ -307,12 +307,12 @@ export default function VoiceMailBox({ user }: VoiceMailBoxProps) {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.1 }}
                 className={`${
-                  message.sender === user.role 
+                  message.sender === user.id 
                     ? 'ml-8' 
                     : 'mr-8'
                 }`}
               >
-                {message.isNew && message.recipient === user.role && (
+                {message.isNew && message.recipient === user.id && (
                   <div className="text-xs text-primary-500 font-medium mb-1 px-2">
                     新消息
                   </div>
@@ -321,14 +321,14 @@ export default function VoiceMailBox({ user }: VoiceMailBoxProps) {
                   message={message}
                   onDelete={handleDeleteMessage}
                   onDownload={handleDownloadMessage}
-                  onPlay={message.recipient === user.role && message.isNew ? () => markAsRead(message.id) : undefined}
+                  onPlay={message.recipient === user.id && message.isNew ? () => markAsRead(message.id) : undefined}
                 />
-                {message.sender === user.role && (
+                {message.sender === user.id && (
                   <div className="text-xs text-warm-text/50 mt-1 px-2 text-right">
                     发送给 {message.recipientName}
                   </div>
                 )}
-                {message.recipient === user.role && (
+                {message.recipient === user.id && (
                   <div className="text-xs text-warm-text/50 mt-1 px-2">
                     来自 {message.senderName}
                   </div>
