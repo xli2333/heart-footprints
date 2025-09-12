@@ -1,0 +1,139 @@
+/* 霞鹜文楷字体定义 */
+@font-face {
+  font-family: 'LXGW WenKai GB';
+  src: url('/lxgw-wenkai-gb-v1.520/LXGWWenKaiGB-Regular.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'LXGW WenKai GB';
+  src: url('/lxgw-wenkai-gb-v1.520/LXGWWenKaiGB-Medium.ttf') format('truetype');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'LXGW WenKai GB';
+  src: url('/lxgw-wenkai-gb-v1.520/LXGWWenKaiGB-Light.ttf') format('truetype');
+  font-weight: 300;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'LXGW WenKai Mono GB';
+  src: url('/lxgw-wenkai-gb-v1.520/LXGWWenKaiMonoGB-Regular.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 248 245 242; /* warm.bg */
+    --foreground: 51 51 51; /* warm.text */
+
+    --card: 254 251 246; /* warm.paper */
+    --card-foreground: 51 51 51;
+
+    --popover: 254 251 246;
+    --popover-foreground: 51 51 51;
+
+    --primary: 197 135 135; /* primary.500 豆沙红 */
+    --primary-foreground: 254 251 246;
+
+    --secondary: 224 224 224; /* warm.muted */
+    --secondary-foreground: 51 51 51;
+
+    --muted: 224 224 224;
+    --muted-foreground: 115 115 115;
+
+    --accent: 241 245 249;
+    --accent-foreground: 51 51 51;
+
+    --destructive: 239 68 68;
+    --destructive-foreground: 248 250 252;
+
+    --border: 224 224 224; /* warm.muted */
+    --input: 224 224 224;
+    --ring: 197 135 135; /* primary.500 */
+
+    --radius: 0.75rem; /* 12px 圆角，符合温暖日记风格 */
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-warm-bg text-warm-text;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+  
+  /* 自定义滚动条样式，符合温暖日记美学 */
+  ::-webkit-scrollbar {
+    width: 8px;
+  }
+  
+  ::-webkit-scrollbar-track {
+    background: theme('colors.warm.bg');
+  }
+  
+  ::-webkit-scrollbar-thumb {
+    background: theme('colors.warm.muted');
+    border-radius: 4px;
+  }
+  
+  ::-webkit-scrollbar-thumb:hover {
+    background: theme('colors.primary.400');
+  }
+}
+
+@layer components {
+  .card-warm {
+    @apply bg-warm-paper border border-warm-muted rounded-xl shadow-sm;
+  }
+  
+  .btn-primary {
+    @apply bg-primary-500 hover:bg-primary-600 text-warm-paper font-medium py-3 px-6 rounded-xl transition-all duration-200 shadow-sm hover:shadow-md;
+  }
+  
+  .btn-secondary {
+    @apply bg-warm-paper hover:bg-warm-muted text-warm-text font-medium py-3 px-6 rounded-xl transition-all duration-200 border border-warm-muted;
+  }
+  
+  .text-title {
+    @apply font-serif text-warm-text;
+  }
+  
+  .text-body {
+    @apply font-sans text-warm-text;
+  }
+  
+  /* 专门为"丝滑"体验设计的动画类 */
+  .animate-float {
+    animation: float 3s ease-in-out infinite;
+  }
+  
+  @keyframes float {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-10px); }
+  }
+  
+  .animate-pulse-soft {
+    animation: pulse-soft 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+  
+  @keyframes pulse-soft {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.8; }
+  }
+}

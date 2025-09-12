@@ -1,0 +1,521 @@
+'use client'
+
+import { useState } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
+import { Mail, Edit3, X, Clock, Send, Calendar, Loader2, MailOpen, Trash2 } from 'lucide-react'
+import useSWR, { mutate } from 'swr'
+import { formatRelativeTime } from '@/lib/utils'
+import { getApiPath } from '@/lib/api-config'
+
+interface Letter {
+  id: string
+  sender_id: 'him' | 'her'
+  title?: string
+  content: string
+  scheduled_delivery_at?: string
+  delivered_at?: string
+  read_at?: string
+  created_at: string
+  sender_name: string
+  is_sent_by_current_user: boolean
+  is_delivered: boolean
+  is_read: boolean
+}
+
+interface LetterData {
+  letters: Letter[]
+  total: number
+  unreadCount: number
+  hasMore: boolean
+}
+
+const fetcher = async (url: string) => {
+  const res = await fetch(url)
+  if (!res.ok) throw new Error('Failed to fetch')
+  return res.json()
+}
+
+export default function LetterBox() {
+  const [showWriter, setShowWriter] = useState(false)
+  const [showReader, setShowReader] = useState(false)
+  const [selectedLetter, setSelectedLetter] = useState<Letter | null>(null)
+  const [currentTab, setCurrentTab] = useState<'inbox' | 'sent'>('inbox')
+  
+  // 写信表单状态
+  const [title, setTitle] = useState('')
+  const [content, setContent] = useState('')
+  const [isScheduled, setIsScheduled] = useState(false)
+  const [scheduleDate, setScheduleDate] = useState('')
+  const [scheduleTime, setScheduleTime] = useState('')
+  const [isSending, setIsSending] = useState(false)
+  const [error, setError] = useState('')
+
+  // 获取信件数据
+  const { data: inboxData, isLoading: inboxLoading } = useSWR<{
+    success: boolean
+    data: LetterData
+  }>(getApiPath('/letters?type=inbox'), fetcher, {
+    refreshInterval: 30000,
+    revalidateOnFocus: true
+  })
+
+  const { data: sentData, isLoading: sentLoading } = useSWR<{
+    success: boolean
+    data: LetterData
+  }>(getApiPath('/letters?type=sent'), fetcher, {
+    refreshInterval: 30000,
+    revalidateOnFocus: true
+  })
+
+  const currentData = currentTab === 'inbox' ? inboxData?.data : sentData?.data
+  const isLoading = currentTab === 'inbox' ? inboxLoading : sentLoading
+  const unreadCount = inboxData?.data?.unreadCount || 0
+
+  // 发送信件
+  const handleSendLetter = async (e: React.FormEvent) => {
+    e.preventDefault()
+    
+    if (!content.trim()) {
+      setError('信件内容不能为空')
+      return
+    }
+
+    setIsSending(true)
+    setError('')
+
+    try {
+      let scheduledDelivery = null
+
+      if (isScheduled && scheduleDate && scheduleTime) {
+        const scheduledDateTime = new Date(`${scheduleDate}T${scheduleTime}:00`)
+        if (scheduledDateTime <= new Date()) {
+          setError('定时发送时间必须是未来的时间')
+          return
+        }
+        scheduledDelivery = scheduledDateTime.toISOString()
+      }
+
+      const response = await fetch(getApiPath('/letters'), {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          title: title.trim() || null,
+          content: content.trim(),
+          scheduled_delivery_at: scheduledDelivery
+        })
+      })
+
+      const result = await response.json()
+
+      if (result.success) {
+        // 刷新数据
+        await Promise.all([
+          mutate(getApiPath('/letters?type=inbox')),
+          mutate(getApiPath('/letters?type=sent'))
+        ])
+        // 重置表单
+        resetWriter()
+      } else {
+        setError(result.error || '发送失败')
+      }
+    } catch (error) {
+      setError('发送过程中出现问题')
+    } finally {
+      setIsSending(false)
+    }
+  }
+
+  // 标记为已读
+  const markAsRead = async (letter: Letter) => {
+    if (letter.is_read || letter.is_sent_by_current_user) return
+
+    try {
+      await fetch(`${getApiPath('/letters')}/${letter.id}`, {
+        method: 'PUT'
+      })
+      // 刷新数据
+      await mutate(getApiPath('/letters?type=inbox'))
+    } catch (error) {
+      console.error('Mark as read error:', error)
+    }
+  }
+
+  // 删除信件
+  const deleteLetter = async (letterId: string) => {
+    if (!confirm('确定要删除这封信吗？')) return
+
+    try {
+      const response = await fetch(`/api/letters/${letterId}`, {
+        method: 'DELETE'
+      })
+
+      if (response.ok) {
+        await mutate(getApiPath('/letters?type=sent')
+        setShowReader(false)
+        setSelectedLetter(null)
+      }
+    } catch (error) {
+      console.error('Delete letter error:', error)
+    }
+  }
+
+  // 重置写信界面
+  const resetWriter = () => {
+    setTitle('')
+    setContent('')
+    setIsScheduled(false)
+    setScheduleDate('')
+    setScheduleTime('')
+    setError('')
+    setShowWriter(false)
+  }
+
+  // 打开信件
+  const openLetter = (letter: Letter) => {
+    setSelectedLetter(letter)
+    setShowReader(true)
+    if (!letter.is_read && !letter.is_sent_by_current_user) {
+      markAsRead(letter)
+    }
+  }
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, x: 20 }}
+      animate={{ opacity: 1, x: 0 }}
+      transition={{ duration: 0.6, delay: 0.4 }}
+      className="bg-warm-paper rounded-2xl p-6 shadow-lg border border-warm-muted"
+    >
+      {/* 头部 */}
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center space-x-3">
+          <div className="relative">
+            <Mail className="w-5 h-5 text-primary-500" />
+            {unreadCount > 0 && (
+              <div className="absolute -top-2 -right-2 w-4 h-4 bg-red-500 rounded-full flex items-center justify-center">
+                <span className="text-xs text-white font-bold">
+                  {unreadCount > 9 ? '9+' : unreadCount}
+                </span>
+              </div>
+            )}
+          </div>
+          <h3 className="text-lg font-serif text-warm-text">时光信札</h3>
+        </div>
+        
+        <button
+          onClick={() => setShowWriter(true)}
+          className="flex items-center space-x-2 text-primary-500 hover:text-primary-600 transition-colors"
+        >
+          <Edit3 className="w-4 h-4" />
+          <span className="text-sm">写信</span>
+        </button>
+      </div>
+
+      {/* 标签切换 */}
+      <div className="flex space-x-1 mb-4 bg-warm-bg rounded-lg p-1">
+        <button
+          onClick={() => setCurrentTab('inbox')}
+          className={`flex-1 py-2 px-3 text-sm font-medium rounded-md transition-colors ${
+            currentTab === 'inbox'
+              ? 'bg-warm-paper text-warm-text shadow-sm'
+              : 'text-warm-text/70 hover:text-warm-text'
+          }`}
+        >
+          收件箱 {unreadCount > 0 && `(${unreadCount})`}
+        </button>
+        <button
+          onClick={() => setCurrentTab('sent')}
+          className={`flex-1 py-2 px-3 text-sm font-medium rounded-md transition-colors ${
+            currentTab === 'sent'
+              ? 'bg-warm-paper text-warm-text shadow-sm'
+              : 'text-warm-text/70 hover:text-warm-text'
+          }`}
+        >
+          发件箱
+        </button>
+      </div>
+
+      {/* 信件列表 */}
+      <div className="space-y-3">
+        {isLoading ? (
+          <div className="text-center py-8">
+            <Loader2 className="w-6 h-6 text-primary-500 animate-spin mx-auto mb-2" />
+            <p className="text-warm-text/70 text-sm">加载中...</p>
+          </div>
+        ) : currentData?.letters.length === 0 ? (
+          <div className="text-center py-8">
+            <Mail className="w-12 h-12 text-warm-text/30 mx-auto mb-3" />
+            <p className="text-warm-text/70">
+              {currentTab === 'inbox' ? '还没有收到信件' : '还没有发送过信件'}
+            </p>
+          </div>
+        ) : (
+          currentData?.letters.map((letter) => (
+            <motion.div
+              key={letter.id}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className={`p-3 rounded-lg border cursor-pointer transition-all hover:shadow-sm ${
+                !letter.is_read && !letter.is_sent_by_current_user
+                  ? 'bg-primary-50 border-primary-200'
+                  : 'bg-warm-bg border-warm-muted hover:bg-warm-paper'
+              }`}
+              onClick={() => openLetter(letter)}
+            >
+              <div className="flex items-start justify-between">
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center space-x-2 mb-1">
+                    {!letter.is_sent_by_current_user && (
+                      <MailOpen className={`w-4 h-4 ${
+                        letter.is_read ? 'text-warm-text/50' : 'text-primary-500'
+                      }`} />
+                    )}
+                    <h4 className="font-medium text-warm-text truncate">
+                      {letter.title || '无标题'}
+                    </h4>
+                    {letter.scheduled_delivery_at && !letter.delivered_at && (
+                      <Clock className="w-4 h-4 text-amber-500" title="定时发送中" />
+                    )}
+                  </div>
+                  
+                  <p className="text-sm text-warm-text/70 line-clamp-2 mb-2">
+                    {letter.content}
+                  </p>
+                  
+                  <div className="flex items-center justify-between text-xs text-warm-text/50">
+                    <span>
+                      {letter.is_sent_by_current_user ? '发给' : '来自'} {letter.sender_name}
+                    </span>
+                    <span>
+                      {letter.delivered_at 
+                        ? formatRelativeTime(new Date(letter.delivered_at))
+                        : letter.scheduled_delivery_at
+                        ? `定时于 ${new Date(letter.scheduled_delivery_at).toLocaleDateString()}`
+                        : '发送中...'
+                      }
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          ))
+        )}
+      </div>
+
+      {/* 写信模态框 */}
+      <AnimatePresence>
+        {showWriter && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+            onClick={(e) => e.target === e.currentTarget && resetWriter()}
+          >
+            <motion.div
+              initial={{ scale: 0.9, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.9, y: 20 }}
+              className="bg-warm-paper rounded-2xl p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-xl"
+            >
+              {/* 头部 */}
+              <div className="flex items-center justify-between mb-6">
+                <h4 className="text-xl font-serif text-warm-text">写一封信</h4>
+                <button
+                  onClick={resetWriter}
+                  className="text-warm-text/70 hover:text-warm-text transition-colors"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* 表单 */}
+              <form onSubmit={handleSendLetter} className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-warm-text mb-2">
+                    标题（可选）
+                  </label>
+                  <input
+                    type="text"
+                    value={title}
+                    onChange={(e) => setTitle(e.target.value)}
+                    placeholder="给这封信起个标题..."
+                    className="w-full p-3 border border-warm-muted rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                    maxLength={100}
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-warm-text mb-2">
+                    内容 <span className="text-red-500">*</span>
+                  </label>
+                  <textarea
+                    value={content}
+                    onChange={(e) => setContent(e.target.value)}
+                    placeholder="在这里写下你想说的话..."
+                    className="w-full p-3 border border-warm-muted rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 resize-none"
+                    rows={8}
+                    maxLength={2000}
+                    required
+                  />
+                  <div className="text-right text-xs text-warm-text/50 mt-1">
+                    {content.length}/2000
+                  </div>
+                </div>
+
+                {/* 定时发送选项 */}
+                <div className="border-t border-warm-muted pt-4">
+                  <label className="flex items-center space-x-2 mb-3">
+                    <input
+                      type="checkbox"
+                      checked={isScheduled}
+                      onChange={(e) => setIsScheduled(e.target.checked)}
+                      className="rounded border-warm-muted text-primary-500 focus:ring-primary-500"
+                    />
+                    <span className="text-sm text-warm-text">定时发送</span>
+                  </label>
+
+                  {isScheduled && (
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-xs text-warm-text/70 mb-1">日期</label>
+                        <input
+                          type="date"
+                          value={scheduleDate}
+                          onChange={(e) => setScheduleDate(e.target.value)}
+                          min={new Date().toISOString().split('T')[0]}
+                          className="w-full p-2 border border-warm-muted rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 text-sm"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs text-warm-text/70 mb-1">时间</label>
+                        <input
+                          type="time"
+                          value={scheduleTime}
+                          onChange={(e) => setScheduleTime(e.target.value)}
+                          className="w-full p-2 border border-warm-muted rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 text-sm"
+                        />
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* 错误提示 */}
+                {error && (
+                  <div className="text-red-500 text-sm bg-red-50 py-2 px-4 rounded-lg">
+                    {error}
+                  </div>
+                )}
+
+                {/* 操作按钮 */}
+                <div className="flex space-x-3 pt-4">
+                  <button
+                    type="button"
+                    onClick={resetWriter}
+                    className="flex-1 py-3 px-4 bg-warm-muted text-warm-text rounded-lg hover:bg-warm-muted/80 transition-colors"
+                  >
+                    取消
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={!content.trim() || isSending}
+                    className="flex-1 py-3 px-4 bg-primary-500 hover:bg-primary-600 disabled:bg-warm-muted text-warm-paper rounded-lg transition-colors disabled:cursor-not-allowed flex items-center justify-center space-x-2"
+                  >
+                    {isSending ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        <span>发送中...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Send className="w-4 h-4" />
+                        <span>{isScheduled ? '安排发送' : '立即发送'}</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              </form>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* 读信模态框 */}
+      <AnimatePresence>
+        {showReader && selectedLetter && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+            onClick={(e) => e.target === e.currentTarget && setShowReader(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.9, y: 20 }}
+              className="bg-warm-paper rounded-2xl p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-xl"
+            >
+              {/* 头部 */}
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex-1">
+                  <h4 className="text-xl font-serif text-warm-text mb-1">
+                    {selectedLetter.title || '无标题'}
+                  </h4>
+                  <div className="flex items-center space-x-4 text-sm text-warm-text/70">
+                    <span>
+                      {selectedLetter.is_sent_by_current_user ? '发给' : '来自'} {selectedLetter.sender_name}
+                    </span>
+                    <span>
+                      {formatRelativeTime(new Date(selectedLetter.delivered_at || selectedLetter.created_at))}
+                    </span>
+                  </div>
+                </div>
+                
+                <div className="flex items-center space-x-2">
+                  {selectedLetter.is_sent_by_current_user && (
+                    <button
+                      onClick={() => deleteLetter(selectedLetter.id)}
+                      className="text-warm-text/70 hover:text-red-500 transition-colors"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  )}
+                  <button
+                    onClick={() => setShowReader(false)}
+                    className="text-warm-text/70 hover:text-warm-text transition-colors"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+              </div>
+
+              {/* 信件内容 */}
+              <div className="prose prose-sm max-w-none">
+                <div className="bg-warm-bg rounded-lg p-4 whitespace-pre-wrap text-warm-text leading-relaxed">
+                  {selectedLetter.content}
+                </div>
+              </div>
+
+              {/* 底部信息 */}
+              <div className="mt-6 pt-4 border-t border-warm-muted text-xs text-warm-text/50 text-center">
+                {selectedLetter.scheduled_delivery_at && (
+                  <p className="mb-1">
+                    定时发送于 {new Date(selectedLetter.scheduled_delivery_at).toLocaleString()}
+                  </p>
+                )}
+                {selectedLetter.read_at && (
+                  <p>
+                    已读于 {formatRelativeTime(new Date(selectedLetter.read_at))}
+                  </p>
+                )}
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </motion.div>
+  )
+}
