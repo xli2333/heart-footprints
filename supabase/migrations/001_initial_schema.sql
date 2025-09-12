@@ -78,7 +78,28 @@ CREATE INDEX idx_letters_sender ON letters(sender_id);
 CREATE INDEX idx_letters_delivered ON letters(delivered_at DESC) WHERE delivered_at IS NOT NULL;
 CREATE INDEX idx_letters_scheduled ON letters(scheduled_delivery_at) WHERE scheduled_delivery_at IS NOT NULL;
 
--- 5. 创建自动更新 updated_at 的函数
+-- 5. 语音信箱表 (voice_messages)
+-- 用于存储语音消息
+CREATE TABLE voice_messages (
+    id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+    sender_id TEXT NOT NULL CHECK (sender_id IN ('him', 'her')),
+    recipient_id TEXT NOT NULL CHECK (recipient_id IN ('him', 'her')),
+    audio_url TEXT NOT NULL,
+    duration DECIMAL(5, 2) NOT NULL CHECK (duration > 0 AND duration <= 300), -- 最长5分钟
+    transcription TEXT, -- 可选的语音转文字
+    is_read BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    
+    -- 确保发送者和接收者不同
+    CONSTRAINT different_users CHECK (sender_id != recipient_id)
+);
+
+-- 创建索引
+CREATE INDEX idx_voice_messages_recipient ON voice_messages(recipient_id, created_at DESC);
+CREATE INDEX idx_voice_messages_sender ON voice_messages(sender_id, created_at DESC);
+CREATE INDEX idx_voice_messages_unread ON voice_messages(recipient_id) WHERE is_read = FALSE;
+
+-- 6. 创建自动更新 updated_at 的函数
 CREATE OR REPLACE FUNCTION update_updated_at_column()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -92,7 +113,7 @@ CREATE TRIGGER update_countdown_events_updated_at
     BEFORE UPDATE ON countdown_events 
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
--- 6. 创建行级安全策略 (RLS)
+-- 7. 创建行级安全策略 (RLS)
 -- 虽然这是私人应用，但增加安全层总是好的
 
 -- 启用 RLS
@@ -100,14 +121,16 @@ ALTER TABLE daily_locations ENABLE ROW LEVEL SECURITY;
 ALTER TABLE memories ENABLE ROW LEVEL SECURITY;
 ALTER TABLE countdown_events ENABLE ROW LEVEL SECURITY;
 ALTER TABLE letters ENABLE ROW LEVEL SECURITY;
+ALTER TABLE voice_messages ENABLE ROW LEVEL SECURITY;
 
 -- 创建允许所有操作的策略（因为我们在应用层控制访问）
 CREATE POLICY "Allow all operations" ON daily_locations FOR ALL USING (true);
 CREATE POLICY "Allow all operations" ON memories FOR ALL USING (true);
 CREATE POLICY "Allow all operations" ON countdown_events FOR ALL USING (true);
 CREATE POLICY "Allow all operations" ON letters FOR ALL USING (true);
+CREATE POLICY "Allow all operations" ON voice_messages FOR ALL USING (true);
 
--- 7. 创建一些实用的视图
+-- 8. 创建一些实用的视图
 
 -- 最近的距离计算视图
 CREATE OR REPLACE VIEW recent_distances AS
@@ -147,7 +170,7 @@ SELECT
 FROM daily_pairs
 ORDER BY date DESC;
 
--- 8. 创建一些有用的函数
+-- 9. 创建一些有用的函数
 
 -- 获取今日同步状态的函数
 CREATE OR REPLACE FUNCTION get_today_sync_status()
@@ -207,3 +230,4 @@ COMMENT ON TABLE daily_locations IS '每日定位记录 - 记录两人每天的�
 COMMENT ON TABLE memories IS '时光相册 - 存储共同的照片回忆';  
 COMMENT ON TABLE countdown_events IS '倒数日事件 - 期盼的未来约定';
 COMMENT ON TABLE letters IS '时光信札 - 异步的情感信件';
+COMMENT ON TABLE voice_messages IS '语音信箱 - 存储语音消息';

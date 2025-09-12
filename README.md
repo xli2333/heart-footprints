@@ -2,7 +2,7 @@
 
 > 一个为相爱的人打造的私密数字空间 - 记录足迹，分享回忆，守护爱情
 
-[![Version](https://img.shields.io/badge/version-6.0.0-pink.svg)](https://github.com/xli2333/heart-footprints)
+[![Version](https://img.shields.io/badge/version-7.0.0-pink.svg)](https://github.com/xli2333/heart-footprints)
 [![Deploy](https://img.shields.io/badge/deploy-vercel-brightgreen.svg)](https://vercel.com)
 [![Database](https://img.shields.io/badge/database-supabase-green.svg)](https://supabase.com)
 [![Maps](https://img.shields.io/badge/maps-高德地图-red.svg)](https://lbs.amap.com/)
@@ -18,6 +18,14 @@
 - **双密码认证**：无需繁琐注册，用你们的专属暗号即可进入
 - **智能身份识别**：系统自动识别"他"和"她"的身份
 - **安全会话管理**：基于JWT的安全认证机制
+
+### 🎤 语音信箱 ⭐ **v7.0 全新功能**
+- **智能录制**：调用麦克风进行高质量语音录制
+- **实时波形**：录制过程中显示动态音频波形
+- **完整播放器**：支持播放、暂停、跳转、音量控制
+- **消息管理**：发送、接收、删除、下载语音消息
+- **时长控制**：最长支持60秒录制，完美传达情感
+- **响应式设计**：移动端和桌面端都有完美体验
 
 ### 📍 今日之约 ⭐ **v6.0 地图功能全面升级**
 - **高德地图集成**：专业级地图服务，支持全球位置显示
@@ -199,7 +207,15 @@ heart-footprints/
 
 ## 🎯 版本历程
 
-### v6.0 (当前版本) - 地图功能全面升级 🗺️
+### v7.0 (当前版本) - 语音信箱功能上线 🎤
+- ✨ **语音信箱**：全新的语音消息功能，用声音传递真心话
+- 🎙️ **智能录制**：支持麦克风录制，实时波形显示，最长60秒
+- 🔊 **完整播放**：内置播放器，支持波形点击跳转和音量控制
+- 📱 **响应式设计**：完美适配移动端和桌面端
+- 🎨 **UI升级**：新增标签切换界面，优化用户体验
+- 🔧 **Mock API完善**：支持语音消息的完整开发测试
+
+### v6.0 - 地图功能全面升级 🗺️
 - ✨ **高德地图集成**：专业级地图服务，支持全球位置展示
 - 🌍 **跨境位置显示**：支持中美等跨境位置标记和距离计算
 - 🔧 **API配置优化**：完善的Mock API开发模式

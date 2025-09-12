@@ -5,11 +5,11 @@ import { useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
 import { Heart, LogOut } from 'lucide-react'
 import { User } from '@/types/database'
-import { getApiPath } from '@/lib/api-config'
 import TodaysConnection from '@/components/TodaysConnection'
 import MemoryGallery from '@/components/MemoryGallery'
 import CountdownTimer from '@/components/CountdownTimer'
 import LetterBox from '@/components/LetterBox'
+import VoiceMailBoxSidebar from '@/components/VoiceMailBoxSidebar'
 
 export default function DashboardPage() {
   const [user, setUser] = useState<User | null>(null)
@@ -19,7 +19,7 @@ export default function DashboardPage() {
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        const response = await fetch(getApiPath('/auth/verify'))
+        const response = await fetch('/api/auth/verify')
         const data = await response.json()
         
         if (data.success) {
@@ -110,6 +110,13 @@ export default function DashboardPage() {
             {/* 倒数日模块 */}
             <CountdownTimer />
 
+            {/* 语音信箱模块 */}
+            {user && (
+              <div id="voice-mailbox">
+                <VoiceMailBoxSidebar user={user} />
+              </div>
+            )}
+
             {/* 时光信札模块 */}
             <div id="letter-box">
               <LetterBox />
@@ -165,6 +172,18 @@ export default function DashboardPage() {
                   className="w-full text-left p-3 hover:bg-warm-bg rounded-lg transition-colors text-warm-text/70 hover:text-warm-text"
                 >
                   💌 查看所有信件
+                </button>
+                <button 
+                  onClick={() => {
+                    // 滚动到语音信箱组件
+                    const voiceSection = document.querySelector('#voice-mailbox')
+                    if (voiceSection) {
+                      voiceSection.scrollIntoView({ behavior: 'smooth' })
+                    }
+                  }}
+                  className="w-full text-left p-3 hover:bg-warm-bg rounded-lg transition-colors text-warm-text/70 hover:text-warm-text"
+                >
+                  🎤 语音信箱
                 </button>
               </div>
             </motion.div>

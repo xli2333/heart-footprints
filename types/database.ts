@@ -168,6 +168,39 @@ export interface Database {
           updated_at?: string
         }
       }
+      
+      // 语音消息记录
+      voice_messages: {
+        Row: {
+          id: string
+          sender_id: 'him' | 'her'
+          recipient_id: 'him' | 'her'
+          audio_url: string
+          duration: number
+          transcription?: string
+          is_read: boolean
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          sender_id: 'him' | 'her'
+          recipient_id: 'him' | 'her'
+          audio_url: string
+          duration: number
+          transcription?: string
+          is_read?: boolean
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          sender_id?: 'him' | 'her'
+          recipient_id?: 'him' | 'her'
+          audio_url?: string
+          duration?: number
+          transcription?: string
+          is_read?: boolean
+        }
+      }
     }
   }
 }
@@ -266,6 +299,28 @@ export interface LetterThread {
   thread_level: number
   is_delivered: boolean
   is_read: boolean
+}
+
+// 语音消息接口
+export interface VoiceMessage {
+  id: string
+  sender_id: UserType
+  recipient_id: UserType
+  audio_url: string
+  duration: number
+  transcription?: string
+  is_read: boolean
+  created_at: string
+}
+
+// 扩展的语音消息接口（包含发送者和接收者名称）
+export interface VoiceMessageWithNames extends VoiceMessage {
+  sender: UserType
+  senderName: string
+  recipient: UserType
+  recipientName: string
+  timestamp: string
+  isNew?: boolean
 }
 
 // API 响应接口

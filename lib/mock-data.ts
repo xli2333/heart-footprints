@@ -1,6 +1,19 @@
 // 本地测试用的 Mock 数据
 import { Memory, DailyLocation, CountdownEvent, Letter } from '@/types/database'
 
+// 语音消息类型定义
+interface VoiceMessage {
+  id: string
+  sender: 'him' | 'her'
+  senderName: string
+  recipient: 'him' | 'her'
+  recipientName: string
+  audioUrl: string
+  duration: number
+  timestamp: string
+  isNew?: boolean
+}
+
 // 使用 Haversine 公式计算两点间距离（公里）
 function calculateDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
   const R = 6371 // 地球半径（公里）
@@ -85,7 +98,10 @@ let mockData = {
       read_at: new Date(Date.now() - 1000 * 60 * 20).toISOString(), // 20分钟前已读
       created_at: new Date(Date.now() - 1000 * 60 * 30).toISOString(),
     }
-  ] as Letter[]
+  ] as Letter[],
+
+  // 模拟的语音消息数据（初始为空，用户录制后会添加）
+  voiceMessages: [] as VoiceMessage[]
 }
 
 // 获取今天的日期字符串
@@ -443,6 +459,92 @@ export const mockApi = {
     return {
       success: true,
       message: '信件已删除'
+    }
+  },
+
+  // 语音消息相关
+  async getVoiceMessages() {
+    await new Promise(resolve => setTimeout(resolve, 400))
+    
+    // 返回所有语音消息，不过滤用户
+    const sortedMessages = [...mockData.voiceMessages].sort((a, b) => 
+      new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+    )
+    
+    return {
+      success: true,
+      data: sortedMessages
+    }
+  },
+
+  async sendVoiceMessage(audioBlob: Blob, duration: number, sender: 'him' | 'her') {
+    await new Promise(resolve => setTimeout(resolve, 1200)) // 模拟上传时间
+    
+    const recipient = sender === 'him' ? 'her' : 'him'
+    const senderName = sender === 'him' ? '小明' : '小红'
+    const recipientName = recipient === 'him' ? '小明' : '小红'
+    
+    // 生成模拟的音频URL（实际项目中会上传到存储服务）
+    const audioUrl = URL.createObjectURL(audioBlob)
+    
+    const newVoiceMessage: VoiceMessage = {
+      id: Date.now().toString(),
+      sender,
+      senderName,
+      recipient,
+      recipientName,
+      audioUrl,
+      duration,
+      timestamp: new Date().toISOString(),
+      isNew: true
+    }
+    
+    mockData.voiceMessages.unshift(newVoiceMessage)
+    
+    return {
+      success: true,
+      data: newVoiceMessage,
+      message: '语音消息发送成功'
+    }
+  },
+
+  async deleteVoiceMessage(messageId: string) {
+    await new Promise(resolve => setTimeout(resolve, 300))
+    
+    const messageIndex = mockData.voiceMessages.findIndex(msg => msg.id === messageId)
+    if (messageIndex === -1) {
+      return {
+        success: false,
+        error: '消息不存在'
+      }
+    }
+    
+    const message = mockData.voiceMessages[messageIndex]
+    
+    // 清理URL对象
+    if (message.audioUrl.startsWith('blob:')) {
+      URL.revokeObjectURL(message.audioUrl)
+    }
+    
+    mockData.voiceMessages.splice(messageIndex, 1)
+    
+    return {
+      success: true,
+      message: '语音消息已删除'
+    }
+  },
+
+  async markVoiceMessageAsRead(messageId: string) {
+    await new Promise(resolve => setTimeout(resolve, 200))
+    
+    const message = mockData.voiceMessages.find(msg => msg.id === messageId)
+    if (message) {
+      message.isNew = false
+    }
+    
+    return {
+      success: true,
+      data: { message }
     }
   }
 }

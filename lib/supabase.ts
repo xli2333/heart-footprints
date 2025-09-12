@@ -1,4 +1,4 @@
-import { createClient } from '@supabase/supabase-js'
+import { createClient as createSupabaseClient } from '@supabase/supabase-js'
 import { Database } from '@/types/database'
 
 // 在构建时提供默认值，避免构建失败
@@ -18,7 +18,7 @@ if (typeof window !== 'undefined') {
   }
 }
 
-export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
+export const supabase = createSupabaseClient<Database>(supabaseUrl, supabaseAnonKey, {
   auth: {
     autoRefreshToken: false,
     persistSession: false,
@@ -26,7 +26,7 @@ export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
   }
 })
 
-// 服务端 Supabase 客户端（用于 API 路由）
-export const createServerClient = () => {
-  return createClient<Database>(supabaseUrl, supabaseAnonKey)
+// 创建 Supabase 客户端的通用函数
+export function createClient() {
+  return createSupabaseClient<Database>(supabaseUrl, supabaseAnonKey)
 }
