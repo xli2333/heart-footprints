@@ -127,11 +127,18 @@ export default function VoicePlayer({
       }
     } catch (error) {
       console.error('播放错误:', error)
-      // 对于本地开发的blob URL，如果失败就静默处理
+      
+      // 对于blob URL，提供更详细的错误处理
       if (message.audioUrl.startsWith('blob:')) {
-        console.log('本地音频播放失败，可能是blob已被释放')
+        console.log('本地音频播放失败，blob URL可能已过期')
+        // 在生产环境中，可以尝试重新获取音频
+        alert('音频已过期，请重新录制')
+      } else if (message.audioUrl.includes('supabase')) {
+        // Supabase存储的音频
+        console.log('Supabase音频播放失败')
+        alert('音频加载失败，请检查网络连接')
       } else {
-        alert('音频播放失败，请检查音频文件是否有效')
+        alert('音频播放失败，请稍后重试')
       }
     } finally {
       setIsLoading(false)

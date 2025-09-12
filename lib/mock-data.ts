@@ -101,7 +101,31 @@ let mockData = {
   ] as Letter[],
 
   // 模拟的语音消息数据（初始为空，用户录制后会添加）
-  voiceMessages: [] as VoiceMessage[]
+  voiceMessages: (() => {
+    // 尝试从sessionStorage恢复语音消息数据
+    if (typeof window !== 'undefined') {
+      try {
+        const saved = sessionStorage.getItem('mockVoiceMessages')
+        return saved ? JSON.parse(saved) : []
+      } catch (error) {
+        console.warn('无法恢复语音消息数据:', error)
+        return []
+      }
+    }
+    return []
+  })() as VoiceMessage[]
+}
+
+// 保存语音消息到sessionStorage
+const saveVoiceMessagesToSession = () => {
+  if (typeof window !== 'undefined') {
+    try {
+      sessionStorage.setItem('mockVoiceMessages', JSON.stringify(mockData.voiceMessages))
+    } catch (error) {
+      console.warn('无法保存语音消息数据:', error)
+    }
+  }
+}
 }
 
 // 获取今天的日期字符串
@@ -481,8 +505,8 @@ export const mockApi = {
     await new Promise(resolve => setTimeout(resolve, 1200)) // 模拟上传时间
     
     const recipient = sender === 'him' ? 'her' : 'him'
-    const senderName = sender === 'him' ? '小明' : '小红'
-    const recipientName = recipient === 'him' ? '小明' : '小红'
+    const senderName = sender === 'him' ? (process.env.USER_HIM_NAME || '老公') : (process.env.USER_HER_NAME || '宝贝')
+    const recipientName = recipient === 'him' ? (process.env.USER_HIM_NAME || '老公') : (process.env.USER_HER_NAME || '宝贝')
     
     // 生成模拟的音频URL（实际项目中会上传到存储服务）
     const audioUrl = URL.createObjectURL(audioBlob)
@@ -500,6 +524,9 @@ export const mockApi = {
     }
     
     mockData.voiceMessages.unshift(newVoiceMessage)
+    
+    // 保存到sessionStorage
+    saveVoiceMessagesToSession()
     
     return {
       success: true,
@@ -528,6 +555,9 @@ export const mockApi = {
     
     mockData.voiceMessages.splice(messageIndex, 1)
     
+    // 保存到sessionStorage
+    saveVoiceMessagesToSession()
+    
     return {
       success: true,
       message: '语音消息已删除'
@@ -541,6 +571,9 @@ export const mockApi = {
     if (message) {
       message.isNew = false
     }
+    
+    // 保存到sessionStorage
+    saveVoiceMessagesToSession()
     
     return {
       success: true,

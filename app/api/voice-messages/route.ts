@@ -29,9 +29,9 @@ export async function GET() {
     const formattedData = data?.map(msg => ({
       id: msg.id,
       sender: msg.sender_id,
-      senderName: msg.sender_id === 'him' ? '小明' : '小红',
+      senderName: msg.sender_id === 'him' ? process.env.USER_HIM_NAME || '老公' : process.env.USER_HER_NAME || '宝贝',
       recipient: msg.recipient_id,
-      recipientName: msg.recipient_id === 'him' ? '小明' : '小红',
+      recipientName: msg.recipient_id === 'him' ? process.env.USER_HIM_NAME || '老公' : process.env.USER_HER_NAME || '宝贝',
       audioUrl: msg.audio_url,
       duration: msg.duration,
       timestamp: msg.created_at,
@@ -129,9 +129,9 @@ export async function POST(request: NextRequest) {
     const formattedMessage = {
       id: messageData.id,
       sender: messageData.sender_id,
-      senderName: messageData.sender_id === 'him' ? '小明' : '小红',
+      senderName: messageData.sender_id === 'him' ? process.env.USER_HIM_NAME || '老公' : process.env.USER_HER_NAME || '宝贝',
       recipient: messageData.recipient_id,
-      recipientName: messageData.recipient_id === 'him' ? '小明' : '小红',
+      recipientName: messageData.recipient_id === 'him' ? process.env.USER_HIM_NAME || '老公' : process.env.USER_HER_NAME || '宝贝',
       audioUrl: messageData.audio_url,
       duration: messageData.duration,
       timestamp: messageData.created_at,
