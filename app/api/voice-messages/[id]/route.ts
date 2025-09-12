@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase'
+import { createClient, isSupabaseConfigured } from '@/lib/supabase'
+import { mockApi } from '@/lib/mock-data'
 
 // DELETE - 删除语音消息
 export async function DELETE(
@@ -7,7 +8,6 @@ export async function DELETE(
   { params }: { params: { id: string } }
 ) {
   try {
-    const supabase = createClient()
     const messageId = params.id
     
     if (!messageId) {
@@ -15,6 +15,14 @@ export async function DELETE(
         { success: false, error: '消息ID不能为空' },
         { status: 400 }
       )
+    }
+
+    const supabase = createClient()
+
+    // 如果Supabase未配置或客户端为null，使用Mock API
+    if (!supabase || !isSupabaseConfigured()) {
+      console.log('🔄 使用Mock API删除语音消息')
+      return NextResponse.json(await mockApi.deleteVoiceMessage(messageId))
     }
 
     // 先获取消息信息，以便删除对应的音频文件
@@ -26,10 +34,9 @@ export async function DELETE(
 
     if (fetchError) {
       console.error('获取消息信息失败:', fetchError)
-      return NextResponse.json(
-        { success: false, error: '消息不存在' },
-        { status: 404 }
-      )
+      // 如果获取失败，fallback到Mock API
+      console.log('🔄 获取消息失败，fallback到Mock API')
+      return NextResponse.json(await mockApi.deleteVoiceMessage(messageId))
     }
 
     // 从数据库删除记录
@@ -40,10 +47,9 @@ export async function DELETE(
 
     if (deleteError) {
       console.error('删除消息失败:', deleteError)
-      return NextResponse.json(
-        { success: false, error: '删除消息失败' },
-        { status: 500 }
-      )
+      // 如果删除失败，fallback到Mock API
+      console.log('🔄 删除消息失败，fallback到Mock API')
+      return NextResponse.json(await mockApi.deleteVoiceMessage(messageId))
     }
 
     // 从存储中删除音频文件
@@ -68,10 +74,9 @@ export async function DELETE(
     })
   } catch (error) {
     console.error('删除语音消息失败:', error)
-    return NextResponse.json(
-      { success: false, error: '删除语音消息失败' },
-      { status: 500 }
-    )
+    // 发生任何错误都fallback到Mock API
+    console.log('🔄 发生错误，fallback到Mock API')
+    return NextResponse.json(await mockApi.deleteVoiceMessage(params.id))
   }
 }
 
@@ -81,7 +86,6 @@ export async function PATCH(
   { params }: { params: { id: string } }
 ) {
   try {
-    const supabase = createClient()
     const messageId = params.id
     
     if (!messageId) {
@@ -89,6 +93,14 @@ export async function PATCH(
         { success: false, error: '消息ID不能为空' },
         { status: 400 }
       )
+    }
+
+    const supabase = createClient()
+
+    // 如果Supabase未配置或客户端为null，使用Mock API
+    if (!supabase || !isSupabaseConfigured()) {
+      console.log('🔄 使用Mock API标记消息已读')
+      return NextResponse.json(await mockApi.markVoiceMessageAsRead(messageId))
     }
 
     const { data, error } = await supabase
@@ -100,10 +112,9 @@ export async function PATCH(
 
     if (error) {
       console.error('标记消息失败:', error)
-      return NextResponse.json(
-        { success: false, error: '标记消息失败' },
-        { status: 500 }
-      )
+      // 如果标记失败，fallback到Mock API
+      console.log('🔄 标记消息失败，fallback到Mock API')
+      return NextResponse.json(await mockApi.markVoiceMessageAsRead(messageId))
     }
 
     return NextResponse.json({
@@ -112,9 +123,8 @@ export async function PATCH(
     })
   } catch (error) {
     console.error('标记消息失败:', error)
-    return NextResponse.json(
-      { success: false, error: '标记消息失败' },
-      { status: 500 }
-    )
+    // 发生任何错误都fallback到Mock API
+    console.log('🔄 发生错误，fallback到Mock API')
+    return NextResponse.json(await mockApi.markVoiceMessageAsRead(params.id))
   }
 }

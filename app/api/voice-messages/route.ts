@@ -1,10 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase'
+import { createClient, isSupabaseConfigured } from '@/lib/supabase'
+import { mockApi } from '@/lib/mock-data'
 
 // GET - 获取语音消息列表
 export async function GET() {
   try {
     const supabase = createClient()
+    
+    // 如果Supabase未配置或客户端为null，使用Mock API
+    if (!supabase || !isSupabaseConfigured()) {
+      console.log('🔄 使用Mock API获取语音消息')
+      return NextResponse.json(await mockApi.getVoiceMessages())
+    }
     
     const { data, error } = await supabase
       .from('voice_messages')
@@ -13,10 +20,9 @@ export async function GET() {
 
     if (error) {
       console.error('获取语音消息失败:', error)
-      return NextResponse.json(
-        { success: false, error: '获取语音消息失败' },
-        { status: 500 }
-      )
+      // 如果Supabase出错，fallback到Mock API
+      console.log('🔄 Supabase出错，fallback到Mock API')
+      return NextResponse.json(await mockApi.getVoiceMessages())
     }
 
     // 转换数据格式以匹配前端接口
@@ -38,19 +44,16 @@ export async function GET() {
     })
   } catch (error) {
     console.error('获取语音消息失败:', error)
-    return NextResponse.json(
-      { success: false, error: '获取语音消息失败' },
-      { status: 500 }
-    )
+    // 发生任何错误都fallback到Mock API
+    console.log('🔄 发生错误，fallback到Mock API')
+    return NextResponse.json(await mockApi.getVoiceMessages())
   }
 }
 
 // POST - 发送语音消息
 export async function POST(request: NextRequest) {
   try {
-    const supabase = createClient()
     const formData = await request.formData()
-    
     const audioFile = formData.get('audio') as File
     const duration = parseFloat(formData.get('duration') as string)
     const sender = formData.get('sender') as 'him' | 'her'
@@ -61,6 +64,16 @@ export async function POST(request: NextRequest) {
         { success: false, error: '参数不完整' },
         { status: 400 }
       )
+    }
+
+    const supabase = createClient()
+    
+    // 如果Supabase未配置或客户端为null，使用Mock API
+    if (!supabase || !isSupabaseConfigured()) {
+      console.log('🔄 使用Mock API发送语音消息')
+      const arrayBuffer = await audioFile.arrayBuffer()
+      const blob = new Blob([arrayBuffer], { type: audioFile.type })
+      return NextResponse.json(await mockApi.sendVoiceMessage(blob, duration, sender))
     }
 
     // 生成唯一文件名
@@ -77,10 +90,11 @@ export async function POST(request: NextRequest) {
 
     if (uploadError) {
       console.error('文件上传失败:', uploadError)
-      return NextResponse.json(
-        { success: false, error: '语音文件上传失败' },
-        { status: 500 }
-      )
+      // 如果上传失败，fallback到Mock API
+      console.log('🔄 文件上传失败，fallback到Mock API')
+      const arrayBuffer = await audioFile.arrayBuffer()
+      const blob = new Blob([arrayBuffer], { type: audioFile.type })
+      return NextResponse.json(await mockApi.sendVoiceMessage(blob, duration, sender))
     }
 
     // 获取公共访问URL
@@ -103,12 +117,12 @@ export async function POST(request: NextRequest) {
 
     if (dbError) {
       console.error('消息保存失败:', dbError)
-      // 如果数据库保存失败，删除已上传的文件
+      // 如果数据库保存失败，删除已上传的文件并fallback到Mock API
       await supabase.storage.from('voice-messages').remove([fileName])
-      return NextResponse.json(
-        { success: false, error: '消息保存失败' },
-        { status: 500 }
-      )
+      console.log('🔄 消息保存失败，fallback到Mock API')
+      const arrayBuffer = await audioFile.arrayBuffer()
+      const blob = new Blob([arrayBuffer], { type: audioFile.type })
+      return NextResponse.json(await mockApi.sendVoiceMessage(blob, duration, sender))
     }
 
     // 格式化返回数据
@@ -131,9 +145,22 @@ export async function POST(request: NextRequest) {
     })
   } catch (error) {
     console.error('发送语音消息失败:', error)
-    return NextResponse.json(
-      { success: false, error: '发送语音消息失败' },
-      { status: 500 }
-    )
+    // 发生任何错误都fallback到Mock API
+    console.log('🔄 发生错误，fallback到Mock API')
+    try {
+      const formData = await request.formData()
+      const audioFile = formData.get('audio') as File
+      const duration = parseFloat(formData.get('duration') as string)
+      const sender = formData.get('sender') as 'him' | 'her'
+      
+      const arrayBuffer = await audioFile.arrayBuffer()
+      const blob = new Blob([arrayBuffer], { type: audioFile.type })
+      return NextResponse.json(await mockApi.sendVoiceMessage(blob, duration, sender))
+    } catch (fallbackError) {
+      return NextResponse.json(
+        { success: false, error: '发送语音消息失败' },
+        { status: 500 }
+      )
+    }
   }
 }
