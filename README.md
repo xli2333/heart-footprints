@@ -8,9 +8,9 @@
 [![Maps](https://img.shields.io/badge/maps-高德地图-red.svg)](https://lbs.amap.com/)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
-## 🌟 产品愿景
+## 🌟 项目简介
 
-**心迹地图**不仅仅是一个技术项目，它承载着两个人的美好记忆与深情。无论你们身处何方，这里都是专属于你们的温暖小窝，记录每一个珍贵瞬间，见证爱情的成长轨迹。
+**心迹地图**是一个专为情侣设计的私密数字空间，帮助相爱的人记录美好时光、分享珍贵回忆。无论身处何方，这里都是你们专属的温暖小窝，见证爱情的每个珍贵瞬间。
 
 ## ✨ 核心功能
 
@@ -288,7 +288,7 @@ heart-footprints/
 
 **用心记录，用爱连接** ✨
 
-*Built with 💕 by [L](https://github.com/xli2333)*
+*Built with 💕 by L*
 
 ---
 
