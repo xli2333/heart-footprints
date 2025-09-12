@@ -6,12 +6,21 @@ import { mockApi } from '@/lib/mock-data'
 export async function GET() {
   try {
     const supabase = createClient()
+    const isConfigured = isSupabaseConfigured()
+    
+    console.log('🔍 获取语音消息 - Supabase配置检查:')
+    console.log('- SUPABASE_URL:', process.env.NEXT_PUBLIC_SUPABASE_URL ? '✅ 已配置' : '❌ 未配置')
+    console.log('- SUPABASE_ANON_KEY:', process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ? '✅ 已配置' : '❌ 未配置')
+    console.log('- isSupabaseConfigured():', isConfigured)
+    console.log('- supabase客户端:', supabase ? '✅ 创建成功' : '❌ 创建失败')
     
     // 如果Supabase未配置或客户端为null，使用Mock API
-    if (!supabase || !isSupabaseConfigured()) {
-      console.log('🔄 使用Mock API获取语音消息')
+    if (!supabase || !isConfigured) {
+      console.log('🔄 使用Mock API获取语音消息，原因:', !supabase ? 'supabase客户端为null' : 'Supabase未正确配置')
       return NextResponse.json(await mockApi.getVoiceMessages())
     }
+    
+    console.log('🚀 使用Supabase获取语音消息')
     
     const { data, error } = await supabase
       .from('voice_messages')
@@ -67,14 +76,24 @@ export async function POST(request: NextRequest) {
     }
 
     const supabase = createClient()
+    const isConfigured = isSupabaseConfigured()
+    
+    // 详细的调试日志
+    console.log('🔍 Supabase配置检查:')
+    console.log('- SUPABASE_URL:', process.env.NEXT_PUBLIC_SUPABASE_URL ? '✅ 已配置' : '❌ 未配置')
+    console.log('- SUPABASE_ANON_KEY:', process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ? '✅ 已配置' : '❌ 未配置')
+    console.log('- isSupabaseConfigured():', isConfigured)
+    console.log('- supabase客户端:', supabase ? '✅ 创建成功' : '❌ 创建失败')
     
     // 如果Supabase未配置或客户端为null，使用Mock API
-    if (!supabase || !isSupabaseConfigured()) {
-      console.log('🔄 使用Mock API发送语音消息')
+    if (!supabase || !isConfigured) {
+      console.log('🔄 使用Mock API发送语音消息，原因:', !supabase ? 'supabase客户端为null' : 'Supabase未正确配置')
       const arrayBuffer = await audioFile.arrayBuffer()
       const blob = new Blob([arrayBuffer], { type: audioFile.type })
       return NextResponse.json(await mockApi.sendVoiceMessage(blob, duration, sender))
     }
+    
+    console.log('🚀 使用Supabase上传语音消息')
 
     // 生成唯一文件名
     const timestamp = Date.now()
