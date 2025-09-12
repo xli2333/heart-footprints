@@ -20,6 +20,8 @@ export default function VoiceRecorder({
   const [duration, setDuration] = useState(0)
   const [audioBlob, setAudioBlob] = useState<Blob | null>(null)
   const [audioUrl, setAudioUrl] = useState<string | null>(null)
+  const [isUploading, setIsUploading] = useState(false)
+  const [uploadProgress, setUploadProgress] = useState(0)
   const [permissionDenied, setPermissionDenied] = useState(false)
   const [waveform, setWaveform] = useState<number[]>(new Array(20).fill(0))
   
@@ -173,10 +175,41 @@ export default function VoiceRecorder({
     }
   }
 
-  const handleSend = () => {
+  const handleSend = async () => {
     if (audioBlob) {
-      onSend(audioBlob, duration)
-      resetRecorder()
+      setIsUploading(true)
+      setUploadProgress(0)
+      
+      // 模拟上传进度
+      const progressInterval = setInterval(() => {
+        setUploadProgress(prev => {
+          if (prev >= 90) {
+            clearInterval(progressInterval)
+            return 90
+          }
+          return prev + 10
+        })
+      }, 200)
+      
+      try {
+        await onSend(audioBlob, duration)
+        setUploadProgress(100)
+        
+        // 完成后清理状态
+        setTimeout(() => {
+          setIsUploading(false)
+          setUploadProgress(0)
+          resetRecorder()
+        }, 500)
+        
+      } catch (error) {
+        console.error('上传失败:', error)
+        setIsUploading(false)
+        setUploadProgress(0)
+        alert('语音消息发送失败，请重试')
+      } finally {
+        clearInterval(progressInterval)
+      }
     }
   }
 
@@ -309,10 +342,45 @@ export default function VoiceRecorder({
             </motion.button>
             <motion.button
               onClick={handleSend}
-              className="flex items-center justify-center w-16 h-16 bg-gradient-to-br from-primary-500 to-primary-600 hover:from-primary-600 hover:to-primary-700 text-white rounded-full transition-all shadow-2xl hover:scale-105"
-              whileTap={{ scale: 0.95 }}
+              disabled={isUploading}
+              className={`relative flex items-center justify-center w-16 h-16 rounded-full transition-all shadow-2xl ${
+                isUploading 
+                  ? 'bg-gray-400 cursor-not-allowed' 
+                  : 'bg-gradient-to-br from-primary-500 to-primary-600 hover:from-primary-600 hover:to-primary-700 hover:scale-105'
+              } text-white`}
+              whileTap={isUploading ? {} : { scale: 0.95 }}
             >
-              <Send className="w-5 h-5" />
+              {isUploading ? (
+                <>
+                  <div className="absolute inset-0 rounded-full">
+                    <svg className="w-16 h-16 transform -rotate-90" viewBox="0 0 64 64">
+                      <circle
+                        cx="32"
+                        cy="32"
+                        r="28"
+                        fill="none"
+                        stroke="rgba(255,255,255,0.3)"
+                        strokeWidth="4"
+                      />
+                      <circle
+                        cx="32"
+                        cy="32"
+                        r="28"
+                        fill="none"
+                        stroke="white"
+                        strokeWidth="4"
+                        strokeLinecap="round"
+                        strokeDasharray={`${2 * Math.PI * 28}`}
+                        strokeDashoffset={`${2 * Math.PI * 28 * (1 - uploadProgress / 100)}`}
+                        className="transition-all duration-300"
+                      />
+                    </svg>
+                  </div>
+                  <div className="text-xs font-bold">{uploadProgress}%</div>
+                </>
+              ) : (
+                <Send className="w-5 h-5" />
+              )}
             </motion.button>
           </>
         )}
@@ -321,7 +389,9 @@ export default function VoiceRecorder({
       {/* 操作说明 */}
       <div className="mt-6 text-center">
         <div className="text-sm text-warm-text/70 font-medium">
-          {!audioBlob ? (
+          {isUploading ? (
+            '📤 正在上传语音消息...'
+          ) : !audioBlob ? (
             isRecording ? '🔴 正在录制中...' : '点击麦克风开始录制'
           ) : (
             '✨ 试听满意后点击发送'
