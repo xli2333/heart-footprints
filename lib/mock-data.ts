@@ -101,19 +101,7 @@ let mockData = {
   ] as Letter[],
 
   // 模拟的语音消息数据（初始为空，用户录制后会添加）
-  voiceMessages: (() => {
-    // 尝试从sessionStorage恢复语音消息数据
-    if (typeof window !== 'undefined') {
-      try {
-        const saved = sessionStorage.getItem('mockVoiceMessages')
-        return saved ? JSON.parse(saved) : []
-      } catch (error) {
-        console.warn('无法恢复语音消息数据:', error)
-        return []
-      }
-    }
-    return []
-  })() as VoiceMessage[]
+  voiceMessages: [] as VoiceMessage[]
 }
 
 // 保存语音消息到sessionStorage
@@ -123,6 +111,20 @@ const saveVoiceMessagesToSession = () => {
       sessionStorage.setItem('mockVoiceMessages', JSON.stringify(mockData.voiceMessages))
     } catch (error) {
       console.warn('无法保存语音消息数据:', error)
+    }
+  }
+}
+
+// 从sessionStorage加载语音消息数据
+const loadVoiceMessagesFromSession = () => {
+  if (typeof window !== 'undefined') {
+    try {
+      const saved = sessionStorage.getItem('mockVoiceMessages')
+      if (saved) {
+        mockData.voiceMessages = JSON.parse(saved)
+      }
+    } catch (error) {
+      console.warn('无法恢复语音消息数据:', error)
     }
   }
 }
@@ -489,6 +491,9 @@ export const mockApi = {
   // 语音消息相关
   async getVoiceMessages() {
     await new Promise(resolve => setTimeout(resolve, 400))
+    
+    // 首先尝试加载sessionStorage中的数据
+    loadVoiceMessagesFromSession()
     
     // 返回所有语音消息，不过滤用户
     const sortedMessages = [...mockData.voiceMessages].sort((a, b) => 
