@@ -67,3 +67,8 @@ jspm_packages/
 # Supabase
 .branches
 .temp
+
+# Large font files (too big for GitHub)
+public/*.ttf
+public/*.woff
+public/*.woff2
