@@ -130,7 +130,14 @@
       "Read(/C:\\Users\\59321\\Classified\\app/**)",
       "Read(/C:\\Users\\59321\\Classified\\app\\api\\auth\\verify/**)",
       "Read(/C:\\Users\\59321\\Classified\\lib/**)",
-      "Read(/C:\\Users\\59321\\Classified\\types/**)"
+      "Read(/C:\\Users\\59321\\Classified\\types/**)",
+      "Read(/C:\\Users\\59321\\Classified\\public/**)",
+      "Bash(git rm:*)",
+      "Read(/C:\\Users\\59321\\Classified/**)",
+      "Read(/C:\\Users\\59321\\Classified\\app/**)",
+      "Read(/C:\\Users\\59321\\Classified\\public/**)",
+      "Read(/C:\\Users\\59321\\Classified\\components/**)",
+      "Read(/C:\\Users\\59321\\Classified\\lib/**)"
     ],
     "deny": [],
     "ask": []

@@ -1,7 +1,7 @@
 /* 霞鹜文楷字体定义 */
 @font-face {
   font-family: 'LXGW WenKai GB';
-  src: url('/lxgw-wenkai-gb-v1.520/LXGWWenKaiGB-Regular.ttf') format('truetype');
+  src: url('/LXGWWenKaiGB-Regular.ttf') format('truetype');
   font-weight: 400;
   font-style: normal;
   font-display: swap;
@@ -9,7 +9,7 @@
 
 @font-face {
   font-family: 'LXGW WenKai GB';
-  src: url('/lxgw-wenkai-gb-v1.520/LXGWWenKaiGB-Medium.ttf') format('truetype');
+  src: url('/LXGWWenKaiGB-Medium.ttf') format('truetype');
   font-weight: 500;
   font-style: normal;
   font-display: swap;
@@ -17,7 +17,7 @@
 
 @font-face {
   font-family: 'LXGW WenKai GB';
-  src: url('/lxgw-wenkai-gb-v1.520/LXGWWenKaiGB-Light.ttf') format('truetype');
+  src: url('/LXGWWenKaiGB-Light.ttf') format('truetype');
   font-weight: 300;
   font-style: normal;
   font-display: swap;
@@ -25,7 +25,7 @@
 
 @font-face {
   font-family: 'LXGW WenKai Mono GB';
-  src: url('/lxgw-wenkai-gb-v1.520/LXGWWenKaiMonoGB-Regular.ttf') format('truetype');
+  src: url('/LXGWWenKaiMonoGB-Regular.ttf') format('truetype');
   font-weight: 400;
   font-style: normal;
   font-display: swap;

@@ -39,6 +39,12 @@ export function formatDate(date: Date): string {
 export function formatRelativeTime(date: Date | string): string {
   const now = new Date()
   const targetDate = typeof date === 'string' ? new Date(date) : date
+  
+  // 检查日期是否有效
+  if (isNaN(targetDate.getTime())) {
+    return '无效日期'
+  }
+  
   const diffInMs = now.getTime() - targetDate.getTime()
   const diffInHours = Math.floor(diffInMs / (1000 * 60 * 60))
   const diffInDays = Math.floor(diffInHours / 24)
@@ -54,7 +60,7 @@ export function formatRelativeTime(date: Date | string): string {
   } else if (diffInDays < 7) {
     return `${diffInDays}天前`
   } else {
-    return formatDate(date)
+    return formatDate(targetDate)
   }
 }
 
@@ -66,6 +72,17 @@ export function formatCountdown(targetDate: Date): {
   seconds: number
   isExpired: boolean
 } {
+  // 检查日期是否有效
+  if (isNaN(targetDate.getTime())) {
+    return {
+      days: 0,
+      hours: 0,
+      minutes: 0,
+      seconds: 0,
+      isExpired: true
+    }
+  }
+  
   const now = new Date()
   const diff = targetDate.getTime() - now.getTime()
   

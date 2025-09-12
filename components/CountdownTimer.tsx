@@ -58,8 +58,15 @@ export default function CountdownTimer() {
       const newCountdowns: { [key: string]: { days: number, hours: number, minutes: number, seconds: number, isExpired: boolean } } = {}
       
       eventsData.activeEvents.forEach(event => {
-        const result = formatCountdown(new Date(event.target_date))
-        newCountdowns[event.id] = result
+        try {
+          const targetDate = new Date(event.target_date)
+          if (!isNaN(targetDate.getTime())) {
+            const result = formatCountdown(targetDate)
+            newCountdowns[event.id] = result
+          }
+        } catch (error) {
+          console.error(`Invalid date for event ${event.id}:`, event.target_date)
+        }
       })
       
       setCountdown(newCountdowns)
@@ -158,12 +165,20 @@ export default function CountdownTimer() {
 
   // 编辑现有事件
   const handleEdit = (event: CountdownEvent) => {
-    const date = new Date(event.target_date)
-    setTitle(event.title)
-    setTargetDate(date.toISOString().split('T')[0])
-    setTargetTime(date.toTimeString().slice(0, 5))
-    setEditingEvent(event)
-    setShowEditor(true)
+    try {
+      const date = new Date(event.target_date)
+      if (isNaN(date.getTime())) {
+        setError('无效的日期格式')
+        return
+      }
+      setTitle(event.title)
+      setTargetDate(date.toISOString().split('T')[0])
+      setTargetTime(date.toTimeString().slice(0, 5))
+      setEditingEvent(event)
+      setShowEditor(true)
+    } catch (error) {
+      setError('日期解析失败')
+    }
   }
 
   if (isLoading) {
@@ -273,13 +288,23 @@ export default function CountdownTimer() {
 
                 {/* 目标日期 */}
                 <p className="text-sm text-warm-text/70 text-center">
-                  {new Date(event.target_date).toLocaleDateString('zh-CN', {
-                    year: 'numeric',
-                    month: 'long',
-                    day: 'numeric',
-                    hour: '2-digit',
-                    minute: '2-digit'
-                  })}
+                  {(() => {
+                    try {
+                      const targetDate = new Date(event.target_date)
+                      if (isNaN(targetDate.getTime())) {
+                        return '日期格式错误'
+                      }
+                      return targetDate.toLocaleDateString('zh-CN', {
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                      })
+                    } catch {
+                      return '日期解析错误'
+                    }
+                  })()}
                 </p>
               </motion.div>
             )
