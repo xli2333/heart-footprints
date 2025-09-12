@@ -128,7 +128,6 @@ const loadVoiceMessagesFromSession = () => {
     }
   }
 }
-}
 
 // 获取今天的日期字符串
 function getTodayString() {
