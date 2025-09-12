@@ -46,6 +46,11 @@ export default function VoicePlayer({
 
   // 格式化时间
   const formatTime = (seconds: number) => {
+    // 处理无效值
+    if (!isFinite(seconds) || isNaN(seconds) || seconds < 0) {
+      return '0:00'
+    }
+    
     const mins = Math.floor(seconds / 60)
     const secs = Math.floor(seconds % 60)
     return `${mins}:${String(secs).padStart(2, '0')}`
@@ -178,44 +183,74 @@ export default function VoicePlayer({
       <motion.div
         initial={{ opacity: 0, x: 20 }}
         animate={{ opacity: 1, x: 0 }}
-        className="flex items-center space-x-3 p-3 bg-warm-paper/50 rounded-xl"
+        className="bg-warm-paper rounded-xl p-4 shadow-sm border border-warm-muted/50"
       >
-        <button
-          onClick={togglePlay}
-          disabled={isLoading}
-          className="flex items-center justify-center w-8 h-8 bg-primary-500 hover:bg-primary-600 text-white rounded-full transition-colors shadow-sm"
-        >
-          {isLoading ? (
-            <div className="w-3 h-3 border border-white border-t-transparent rounded-full animate-spin" />
-          ) : isPlaying ? (
-            <Pause className="w-3 h-3" />
-          ) : (
-            <Play className="w-3 h-3 ml-0.5" />
-          )}
-        </button>
-        
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center space-x-1 mb-1">
-            {waveform.map((height, index) => (
-              <button
-                key={index}
-                onClick={() => handleWaveformClick(index)}
-                className="flex-1 h-6 flex items-end cursor-pointer group"
-              >
-                <div
-                  className={`w-full rounded-sm transition-colors ${
-                    playedWaveform[index]
-                      ? 'bg-primary-500'
-                      : 'bg-warm-muted group-hover:bg-primary-300'
-                  }`}
-                  style={{ height: `${height * 20 + 4}px` }}
-                />
-              </button>
-            ))}
+        {/* 消息头部信息 */}
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center space-x-3">
+            <div className="w-8 h-8 bg-primary-500 rounded-full flex items-center justify-center">
+              <Volume2 className="w-4 h-4 text-white" />
+            </div>
+            <div>
+              <div className="font-medium text-warm-text text-sm">
+                {message.senderName}
+              </div>
+              <div className="text-xs text-warm-text/60">
+                {formatDistanceToNow(new Date(message.timestamp), { 
+                  addSuffix: true, 
+                  locale: zhCN 
+                })}
+              </div>
+            </div>
           </div>
-          <div className="flex items-center justify-between text-xs text-warm-text/60">
-            <span>{formatTime(currentTime)}</span>
-            <span>{formatTime(duration)}</span>
+          
+          {/* 时长显示 */}
+          <div className="text-sm text-warm-text/70 font-mono">
+            {formatTime(duration)}
+          </div>
+        </div>
+
+        {/* 播放器控件 */}
+        <div className="flex items-center space-x-3">
+          <button
+            onClick={togglePlay}
+            disabled={isLoading}
+            className="flex items-center justify-center w-10 h-10 bg-primary-500 hover:bg-primary-600 text-white rounded-full transition-colors shadow-sm flex-shrink-0"
+          >
+            {isLoading ? (
+              <div className="w-4 h-4 border border-white border-t-transparent rounded-full animate-spin" />
+            ) : isPlaying ? (
+              <Pause className="w-4 h-4" />
+            ) : (
+              <Play className="w-4 h-4 ml-0.5" />
+            )}
+          </button>
+          
+          {/* 波形和进度 */}
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center space-x-1 mb-2">
+              {waveform.map((height, index) => (
+                <button
+                  key={index}
+                  onClick={() => handleWaveformClick(index)}
+                  className="flex-1 h-5 flex items-end cursor-pointer group"
+                >
+                  <div
+                    className={`w-full rounded-sm transition-colors ${
+                      playedWaveform[index]
+                        ? 'bg-primary-500'
+                        : 'bg-warm-muted group-hover:bg-primary-300'
+                    }`}
+                    style={{ height: `${height * 16 + 3}px` }}
+                  />
+                </button>
+              ))}
+            </div>
+            
+            {/* 当前时间显示 */}
+            <div className="text-center text-xs text-warm-text/60 font-mono">
+              {formatTime(currentTime)} / {formatTime(duration)}
+            </div>
           </div>
         </div>
 
@@ -228,7 +263,7 @@ export default function VoicePlayer({
             resetAudio()
           }}
           onLoadedMetadata={() => {
-            if (audioRef.current) {
+            if (audioRef.current && isFinite(audioRef.current.duration)) {
               setDuration(audioRef.current.duration)
             }
           }}
@@ -356,7 +391,7 @@ export default function VoicePlayer({
           resetAudio()
         }}
         onLoadedMetadata={() => {
-          if (audioRef.current) {
+          if (audioRef.current && isFinite(audioRef.current.duration)) {
             setDuration(audioRef.current.duration)
           }
         }}
